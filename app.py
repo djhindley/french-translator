@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 from deep_translator import GoogleTranslator
 from langdetect import detect, DetectorFactory
+import os
 
 # Make langdetect deterministic (important!)
 DetectorFactory.seed = 0
@@ -50,6 +51,15 @@ def add_no_cache_headers(response):
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
+
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory(os.path.join(app.root_path), 'manifest.json')
+
+@app.route('/service-worker.js')
+def service_worker():
+    return send_from_directory(os.path.join(app.root_path), 'service-worker.js')
+
 
 if __name__ == "__main__":
     app.run(debug=True)
