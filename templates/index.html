@@ -24,7 +24,6 @@
   </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
 
 <!-- Tailwind dark mode configuration -->
 <script>
@@ -105,9 +104,20 @@
   </div>
 
   <script>
-    function showSpinner() { document.getElementById('loadingSpinner').classList.remove('hidden'); }
-    function copyText(txt) { navigator.clipboard.writeText(txt); alert('Copied!'); }
-    function toggleDarkMode() { document.body.classList.toggle('dark'); }
-  </script>
+  function showSpinner() {
+    document.getElementById('loadingSpinner').classList.remove('hidden');
+  }
+
+  function copyText(txt) {
+    navigator.clipboard.writeText(txt);
+    alert('Copied!');
+  }
+
+  // FIXED: toggle dark mode on the <html> tag (required for Tailwind)
+  function toggleDarkMode() {
+    document.documentElement.classList.toggle('dark');
+  }
+</script>
+
 </body>
 </html>
