@@ -1,7 +1,31 @@
 from flask import Flask, render_template, request, send_from_directory
 from deep_translator import GoogleTranslator
-from langdetect import detect, DetectorFactory
+from langdetect import detect, DetectorFactory, LangDetectException
 import os
+
+LANGUAGE_NAMES = {
+"en": "English",
+"fr": "French",
+"de": "German",
+"es": "Spanish",
+"it": "Italian",
+"nl": "Dutch",
+"pt": "Portuguese",
+}
+
+SUPPORTED_LANGS = {
+    "fr": "fr",
+    "de": "de",
+    "es": "es",
+    "it": "it",
+    "nl": "nl",
+    "pt": "pt",
+    "sv": "sv",
+    "pl": "pl",
+    "en": "en"
+}
+
+
 
 # Make langdetect deterministic (important!)
 DetectorFactory.seed = 0
@@ -23,26 +47,61 @@ def detect_language(text):
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
+
+        # 1️⃣ Read form inputs
         text = request.form["text"]
+        base_lang = request.form.get("base_lang", "en")
+        learning_lang = request.form.get("learning_lang", "fr")
+        mode = request.form.get("mode", "mode1")
 
-        # Detect language (offline, free)
-        detected_lang = detect_language(text)
+        # 2️⃣ TRANSLATION LOGIC (THIS IS STEP 3.3)
+        english = None
+        back_translation = None
+        original_text = text
 
-        # Always translate to English first
-        english = GoogleTranslator(source="auto", target="en").translate(text)
+        if mode == "mode1":
+            # Learning → Base → Learning
+            base_text = GoogleTranslator(
+                source=learning_lang,
+                target=base_lang
+            ).translate(text)
 
-        # Back-translate English → French
-        french_back = GoogleTranslator(source="en", target="fr").translate(english)
+            back_translation = GoogleTranslator(
+                source=base_lang,
+                target=learning_lang
+            ).translate(base_text)
+
+            english = base_text
+
+        elif mode == "mode2":
+            # Base → Learning
+            learning_text = GoogleTranslator(
+                source=base_lang,
+                target=learning_lang
+            ).translate(text)
+
+            english = learning_text
+
+        # 3️⃣ Return HTML
+        print("DEBUG MODE =", mode)
 
         return render_template(
             "index.html",
-            original=text,
+            original=original_text,
             english=english,
-            french_back=french_back,
-            detected=detected_lang
+            back_translation=back_translation,
+            base_lang_name=LANGUAGE_NAMES.get(base_lang),
+            learning_lang_name=LANGUAGE_NAMES.get(learning_lang),
+            mode=mode
         )
 
-    return render_template("index.html")
+    # GET request (initial page load)
+    return render_template(
+        "index.html",
+        base_lang_name=LANGUAGE_NAMES.get("en"),
+        learning_lang_name=LANGUAGE_NAMES.get("fr"),
+        mode="mode1"
+    )
 
 
 @app.after_request
@@ -60,6 +119,6 @@ def manifest():
 def service_worker():
     return send_from_directory(os.path.join(app.root_path), 'service-worker.js')
 
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
